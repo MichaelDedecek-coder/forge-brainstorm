@@ -40,6 +40,18 @@
             </svg>
         );
 
+        const Mail = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        );
+
+        const Key = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+        );
+
         function ForgeBrainstormingApp() {
             const [formData, setFormData] = useState({
                 companyName: '',
@@ -53,6 +65,15 @@
             const [ideas, setIdeas] = useState(null);
             const [understanding, setUnderstanding] = useState('');
             const [error, setError] = useState('');
+            const [apiKey, setApiKey] = useState('');
+            const [showContactForm, setShowContactForm] = useState(false);
+            const [contactFormData, setContactFormData] = useState({
+                name: '',
+                email: '',
+                company: '',
+                message: ''
+            });
+            const [contactSubmitted, setContactSubmitted] = useState(false);
 
             const sessionTypes = [
                 'Vývoj Produktu',
@@ -69,9 +90,32 @@
                 }));
             };
 
+            const handleContactFormChange = (e) => {
+                const { name, value } = e.target;
+                setContactFormData(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            };
+
+            const handleContactSubmit = () => {
+                if (!contactFormData.name || !contactFormData.email) {
+                    alert('Prosím vyplňte jméno a email');
+                    return;
+                }
+                
+                setContactSubmitted(true);
+                setShowContactForm(false);
+            };
+
             const generateIdeas = async () => {
                 if (!formData.companyName || !formData.product || !formData.sessionType || !formData.goals) {
                     setError('Prosím vyplňte všechna povinná pole');
+                    return;
+                }
+
+                if (!apiKey) {
+                    setError('Prosím zadejte Claude API klíč. Nemáte klíč? Klikněte na "Získat Přístup" výše.');
                     return;
                 }
 
@@ -127,6 +171,8 @@ KRITICKY DŮLEŽITÉ:
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'x-api-key': apiKey,
+                            'anthropic-version': '2023-06-01'
                         },
                         body: JSON.stringify({
                             model: 'claude-sonnet-4-20250514',
@@ -138,7 +184,7 @@ KRITICKY DŮLEŽITÉ:
                     });
 
                     if (!response.ok) {
-                        throw new Error('Chyba při volání API');
+                        throw new Error('Chyba při volání API - zkontrolujte API klíč');
                     }
 
                     const data = await response.json();
@@ -152,7 +198,7 @@ KRITICKY DŮLEŽITÉ:
                     
                 } catch (err) {
                     console.error('Error:', err);
-                    setError('Nepodařilo se vygenerovat nápady. Zkuste to prosím znovu.');
+                    setError('Nepodařilo se vygenerovat nápady. Zkontrolujte váš API klíč a zkuste to znovu.');
                 } finally {
                     setLoading(false);
                 }
@@ -217,6 +263,125 @@ KRITICKY DŮLEŽITÉ:
                                 Generujte kontextuální, akční nápady šité na míru Vaší firmě a cílům
                             </p>
                         </div>
+
+                        {/* Access Request Section */}
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-2xl p-8 mb-8 shadow-lg">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div className="text-blue-600">
+                                    <Key />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-2xl font-bold text-blue-900 mb-3">Potřebujete Claude API Klíč</h3>
+                                    <p className="text-blue-800 mb-4 leading-relaxed">
+                                        Pro použití tohoto nástroje potřebujete Claude API klíč. Kontaktujte nás a my Vám pošleme přístupový klíč zdarma! Stačí vyplnit Vaše jméno a email.
+                                    </p>
+                                    
+                                    {!contactSubmitted ? (
+                                        <button
+                                            onClick={() => setShowContactForm(true)}
+                                            className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+                                        >
+                                            <Mail />
+                                            Získat Přístup Zdarma
+                                        </button>
+                                    ) : (
+                                        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                                            <p className="text-green-800 font-semibold mb-2">✅ Děkujeme za registraci!</p>
+                                            <p className="text-green-700 text-sm">
+                                                Brzy Vám pošleme Claude API klíč na email <strong>{contactFormData.email}</strong>. 
+                                                Poté ho zadejte do pole níže a můžete začít generovat nápady!
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* API Key Input */}
+                            <div className="mt-6">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Claude API Klíč (obdržíte emailem)
+                                </label>
+                                <input
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="Vložte zde API klíč, který obdržíte od FORGE CREATIVE"
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Contact Form Modal */}
+                        {showContactForm && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                                    <h3 className="text-2xl font-bold text-teal-800 mb-4">Získat Claude API Klíč</h3>
+                                    <p className="text-gray-600 mb-6">
+                                        Vyplňte prosím Vaše údaje a my Vám API klíč pošleme zdarma na email!
+                                    </p>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Celé jméno *</label>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value={contactFormData.name}
+                                                onChange={handleContactFormChange}
+                                                placeholder="např. Jan Novák"
+                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={contactFormData.email}
+                                                onChange={handleContactFormChange}
+                                                placeholder="vas@email.cz"
+                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Firma (volitelné)</label>
+                                            <input
+                                                type="text"
+                                                name="company"
+                                                value={contactFormData.company}
+                                                onChange={handleContactFormChange}
+                                                placeholder="Vaše firma"
+                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Zpráva (volitelné)</label>
+                                            <textarea
+                                                name="message"
+                                                value={contactFormData.message}
+                                                onChange={handleContactFormChange}
+                                                placeholder="Něco o Vašem projektu..."
+                                                rows={3}
+                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                            />
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={handleContactSubmit}
+                                                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all"
+                                            >
+                                                Odeslat
+                                            </button>
+                                            <button
+                                                onClick={() => setShowContactForm(false)}
+                                                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-6 rounded-lg transition-all"
+                                            >
+                                                Zrušit
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
                             <div className="flex items-center gap-2 mb-6 text-blue-600">
@@ -306,7 +471,7 @@ KRITICKY DŮLEŽITÉ:
 
                                 <button
                                     onClick={generateIdeas}
-                                    disabled={loading}
+                                    disabled={loading || !apiKey}
                                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
                                 >
                                     {loading ? (
